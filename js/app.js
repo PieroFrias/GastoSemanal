@@ -1,11 +1,13 @@
 // Variables y selectores
 const form = document.querySelector('#agregar-gasto');
 const listaGastos = document.querySelector('#gastos ul');
+const tituloPrimario = document.querySelector('#tituloPrimario');
 
 // Eventos
 eventListeners();
 function eventListeners() {
     document.addEventListener('DOMContentLoaded', preguntarPresupuesto);
+    form.addEventListener('submit', agregarGastos);
 }
 
 // Clases
@@ -26,6 +28,30 @@ class UI {
         document.querySelector('#total').textContent = presupuesto;
         document.querySelector('#restante').textContent = restante;
     }
+
+    alerta(mensaje, tipo) {
+        // crear div
+        const divAlerta = document.createElement('div');
+        divAlerta.classList.add('text-center', 'alert');
+
+        if(tipo === 'error') {
+            divAlerta.classList.add('alert-danger');
+        }
+        else {
+            divAlerta.classList.add('alert-succes');
+        }
+
+        // mensaje
+        divAlerta.textContent = mensaje;
+
+        // insertarlo en el HTML
+        document.querySelector('.primario').insertBefore(divAlerta, tituloPrimario);
+
+        // quitar del HTML
+        setTimeout(() => {
+            divAlerta.remove();
+        }, 2000);
+    }
 }
 
 // instanciar
@@ -45,4 +71,22 @@ function preguntarPresupuesto() {
     presupuestoUsuario = new Presupuesto(presupuesto);
 
     ui.insertarPresupuesto(presupuestoUsuario);
+}
+
+function agregarGastos(e) {
+    e.preventDefault();
+
+    // Leer los datos del form
+    const gasto = document.querySelector('#gasto').value;
+    const monto = document.querySelector('#cantidad').value;
+
+    // Validar
+    if(gasto === '' || monto === '') {
+        ui.alerta('Ambos campos son requeridos', 'error');
+        return;
+    }
+    else if(monto < 0 || isNaN(monto)) {
+        ui.alerta('Cantidad no válida', 'error');
+        return;
+    }
 }
