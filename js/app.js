@@ -19,8 +19,18 @@ class Presupuesto {
     }
 
     nuevoGasto(gasto) {
-        this.gastos = [...this.gastos];
-        console.log(gasto);
+        this.gastos = [...this.gastos, gasto];
+        this.calcularRestante();
+    }
+
+    calcularRestante() {
+        const gastado = this.gastos.reduce( (total, gasto) => total + gasto.monto, 0 );
+        this.restante = this.presupuesto - gastado;
+    }
+
+    eliminarGasto(id) {
+        this.gastos = this.gastos.filter( gasto => gasto.id !== id );
+        this.calcularRestante();
     }
 }
 
@@ -57,6 +67,74 @@ class UI {
             divAlerta.remove();
         }, 2000);
     }
+
+    mostrarGastos(gastos) {
+        this.limpiarHTML();
+
+        // Iterar sobre los gastos
+        gastos.forEach(gastoList => {
+            const { gasto, monto, id } = gastoList;
+
+            // Crear un li
+            const nuevoGasto = document.createElement('li');
+            nuevoGasto.className = 'list-group-item d-flex justify-content-between align-items-center';
+            nuevoGasto.dataset.id = id;
+
+            // Agregar el HTML del gasto
+            nuevoGasto.innerHTML = `${gasto} <span class="badge badge-primary badge-pill"> s/ ${monto} </span>`;
+
+            // Botón para borrar un gasto
+            const btnBorrar = document.createElement('button');
+            btnBorrar.innerHTML = 'Borrar &times;'
+            btnBorrar.classList.add('btn', 'btn-danger', 'borrar-gasto');
+            btnBorrar.onclick = () => {
+                eliminarGasto(id);
+            }
+
+            nuevoGasto.appendChild(btnBorrar);
+
+            // Agregar el HTML
+            listaGastos.appendChild(nuevoGasto);
+        });
+    }
+
+    limpiarHTML() {
+        while (listaGastos.firstChild) {
+            listaGastos.removeChild(listaGastos.firstChild);
+        }
+    }
+
+    actualizarRestante(restante) {
+        document.querySelector('#restante').textContent = restante;
+    }
+
+    comprobarPresupuesto(presupuestoUsuario) {
+        const { presupuesto, restante } = presupuestoUsuario;
+        const restanteDiv = document.querySelector('.restante');
+        
+        // Comprobar 25%
+        if((presupuesto/4) > restante) {
+            restanteDiv.classList.remove('alert-success', 'alert-warning');
+            restanteDiv.classList.add('alert-danger');
+        }
+        else if((presupuesto/2) > restante) {
+            restanteDiv.classList.remove('alert-success');
+            restanteDiv.classList.add('alert-warning');
+        }
+        else {
+            restanteDiv.classList.remove('alert-danger', 'alert-warning');
+            restanteDiv.classList.add('alert-success');
+        }
+
+        // Si el total es 0 o menor
+        if(restante < 1) {
+            ui.alerta('El presupuesto se ha agotado', 'error');
+            form.querySelector('button[type="submit"]').disabled = true;
+        }
+        else {
+            form.querySelector('button[type="submit"]').disabled = false;
+        }
+    }
 }
 
 // instanciar
@@ -86,7 +164,7 @@ function agregarGastos(e) {
     const monto = Number(document.querySelector('#cantidad').value);
 
     // Validar
-    if(gasto === '' || monto === '') {
+    if(gasto === '' || monto == '') {
         ui.alerta('Ambos campos son requeridos', 'error');
         return;
     }
@@ -100,9 +178,25 @@ function agregarGastos(e) {
 
     // Agrega un nuevo gasto
     presupuestoUsuario.nuevoGasto(gastoUsuario);
-
     ui.alerta('Gasto agregado correctamente', 'success');
+
+    // mostrar la lista de gastos en el HTML
+    const {gastos, restante} = presupuestoUsuario;
+    ui.mostrarGastos(gastos);
+    ui.actualizarRestante(restante);
+    ui.comprobarPresupuesto(presupuestoUsuario);
 
     // Reinicia el formulario
     form.reset();
+}
+
+function eliminarGasto(id) {
+    // Elimina los gastos del objeto
+    presupuestoUsuario.eliminarGasto(id);
+
+    // Elimina los gastos del HTML
+    const { gastos, restante } = presupuestoUsuario;
+    ui.mostrarGastos(gastos);
+    ui.actualizarRestante(restante);
+    ui.comprobarPresupuesto(presupuestoUsuario);
 }
